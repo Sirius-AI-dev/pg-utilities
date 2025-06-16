@@ -720,30 +720,38 @@ Okay, I can definitely help with that! You've provided the text content of the t
 Here's the Markdown version of the table from your `data_modifier` file:
 
 ```markdown
-| Type             | Description                                                                                     | Parameters                                                                                                                    |
-| ---------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| f_number         | convert data to "number" format                                                                 | `"format":` any format for "number" type                                                                                      |
-| f_checkbox       | convert true / false to any values                                                              | `"format":` "number<:true><:false>" \| "boolean<:true><:false>"                                                              |
-| f_string         | convert data to "string" format                                                                 | `"format":` "password"<br>`"delimiter"` => build string with delimiters from array \| object                                   |
-| f_object         | convert data to "object" format                                                                 | `"pretty":` 1 => jsonb_pretty()<br>`"strip":` 1 => strip nulls                                                               |
-| f_array          | convert data to "array" format                                                                  | `"pretty":` 1 => jsonb_pretty()<br>`"strip":` 1 => strip nulls                                                               |
-| f_date           | convert date_iso \| date_2000 to "date" format                                                  | `"format":` any format for "date" type<br>`"null_to_1970":` null date=>1970-01-01                                           |
-| f_date_iso       | convert date from any format to YYYY-MM-DD                                                      | `"format":` any format for "date" type<br>`"null_to_1970":` null date=>1970-01-01                                           |
-| f_timestamp      | convert data to "timestamp" format                                                              | `"format":` any format for "timestamp" type<br>`"timeZone":` "3-letters timezone"<br>`"null_to_1970":` null date=>1970-01-01 |
-| f_date_2000      | convert to "date_iso" format, then calculate amount of days after 2000-01-01                    | `"format":` any format for "date" type                                                                                      |
-| f_unix_timestamp | convert data to UNIX timestamp format (seconds since 1970-01-01)                                | `"format":` any format for "timestamp" type                                                                                 |
-| f_period         | convert "period" format to amount of seconds                                                    | (No specific parameters listed in the source text)                                                                            |
-| s_lower          | string transformation                                                                           | (No specific parameters listed in the source text)                                                                            |
-| s_upper          | string transformation                                                                           | (No specific parameters listed in the source text)                                                                            |
-| s_initcap        | string transformation                                                                           | (No specific parameters listed in the source text)                                                                            |
-| s_btrim          | btrim operation                                                                                 | `"btrim":` symbols to trim                                                                                                    |
-| s_regexp_match   | regex transformation                                                                            | `"regex":` regex expression                                                                                                   |
-| s_regex_replace  | regex transformation                                                                            | `"from"`, `"to"`, `"flag":`<br>regexp_replace() parameters                                                                   |
-| s_split`         | string to array using regex                                                                     | `"regex":` regex expression                                                                                                   |
-| s_nulls_to_string| convert all nulls to strings                                                                    | `"default":` <any value> ("" by default)                                                                                     |
-| v_number         | convert and validate field type                                                                 | `"format":` "<any data format>"<br>`"validator": { "jsonpath": "$ > 0 && $ < 20", "maxLength": 256 }`                        |
-| v_string         | convert and validate field type                                                                 | `"format":` "<any data format>"<br>`"validator": { "jsonpath": "$ > 0 && $ < 20", "maxLength": 256 }`                        |
-| v_date_2000      | convert and validate field type                                                                 | `"format":` "<any data format>"<br>`"validator": { "jsonpath": "$ > 0 && $ < 20", "maxLength": 256 }`                        |
+| Type             | Description                                         | Parameters                                                                                   |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------|
+| f_number         | convert data to "number" format                     | `"format":` any format for "number" type                                                     |
+| f_checkbox       | convert true / false to any values                  | `"format":` "number<:true><:false>" \| "boolean<:true><:false>"                              |
+| f_string         | convert data to "string" format                     | `"format":` "password", `"delimiter"` => build string with delimiters from array \| object   |
+| f_object         | convert data to "object" format                     | `"pretty":` 1 => jsonb_pretty(), `"strip":` 1 => strip nulls                                 |
+| f_array          | convert data to "array" format                      | `"pretty":` 1 => jsonb_pretty(),`"strip":` 1 => strip nulls                                  |
+| f_date           | convert date_iso \| date_2000 to "date" format      | `"format":` any format for "date" type<br>`"null_to_1970":` null date=>1970-01-01            |
+| f_date_iso       | convert date from any format to YYYY-MM-DD          | `"format":` any format for "date" type<br>`"null_to_1970":` null date=>1970-01-01            |
+| f_timestamp      | convert data to "timestamp" format                  | `"format":` any format for "timestamp" type                                                  |
+|                  |                                                     | `"timeZone":` "3-letters timezone",`"null_to_1970":` null date=>1970-01-01                   |
+| f_date_2000      | convert to "date_iso" format,                       | `"format":` any format for "date" type                                                       |
+|                  | then calculate amount of days after 2000-01-01      | `"format":` any format for "date" type                                                       |
+| f_unix_timestamp | convert data to UNIX timestamp format               | `"format":` any format for "timestamp" type                                                  |
+|                  | (seconds since 1970-01-01)                          |                                                                                              |
+| f_period         | convert "period" format to amount of seconds        | `"period":` "100s", "p14d", "p1y", etc                                                       |
+| s_lower          | string transformation                               |                                                                                              |
+| s_upper          | string transformation                               |                                                                                              |
+| s_initcap        | string transformation                               |                                                                                              |
+| s_btrim          | btrim operation                                     | `"btrim":` symbols to trim                                                                   |
+| s_regexp_match   | regex transformation                                | `"regex":` regex expression                                                                  |
+| s_regex_replace  | regex transformation                                | `"from"`, `"to"`, `"flag":` regexp_replace() parameters                                      |
+| s_split`         | string to array using regex                         | `"regex":` regex expression                                                                  |
+| s_nulls_to_string| convert all nulls to strings                        | `"default":` <any value> ("" by default)                                                     |
+| v_number         | convert and validate "number" type                  | `"validator": { "jsonpath": "$ > 0" }`                                                       |
+| v_string         | convert and validate "string" type                  | `"format":` null | "html" (remove <script>, <embed>, <iframe> and similar tags)              |
+| v_string         |                                                     | `"validator": { "jsonpath": "$ like_regex \"^A\"", "maxLength": 256 }`                       |
+| v_date_2000      | validate "date" type and convert to amount of days  | `"format":` "<any date format>"`                                                             |
+|                  | after 2000-01-01                                    |                                                                                              |
+| v_unix_timestamp | convert "timestamp" type to UNIX timestamp          | `"format":` "<any date & time format>"`                                                      |
+| v_object         | convert and validate "object" type                  | `"validator": { "jsonpath": "$.a == 1", "maxLength": 1024 }`                                 |
+| v_array          | convert and validate "object" type                  | `"validator": { "jsonpath": "$[*] == 10", "maxLength": 4096 }`                               |
 ```
 
 ### `ub.util_build_template`
