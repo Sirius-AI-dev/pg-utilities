@@ -4,6 +4,8 @@ Useful utilities for PostgreSQL to process json objects, to build templates and 
 # How to install
 Open **pg_utilities.sql** file, copy its content, and paste in PostgreSQL in required database. A new **"ub"** scheme with multiple functions will be created.
 
+List of all functions, with detailed description and examples, is below:
+
 ## Table of Contents
 
 *   [Array Utilities](#array-utilities)
