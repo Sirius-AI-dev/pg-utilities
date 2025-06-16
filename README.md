@@ -715,6 +715,33 @@ SELECT ub.util_data_modifier(jsonb_build_object(
 -- { "message": "invalid_jsonpath" }
 ```
 
+Okay, I can definitely help with that! You've provided the text content of the table, which I can now process.
+
+Here's the Markdown version of the table from your `data_modifier` file:
+
+```markdown
+| Type             | Description                                                                                     | Parameters                                                                                                                    |
+| :--------------- | :---------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------- |
+| `f_number`       | convert data to "number" format                                                                 | `"format":` any format for "number" type                                                                                      |
+| `f_checkbox`     | convert true / false to any values                                                              | `"format":` "number<:true><:false>" \| "boolean<:true><:false>"                                                              |
+| `f_string`       | convert data to "string" format                                                                 | `"format":` "password"<br>`"delimiter"` => build string with delimiters from array \| object                                   |
+| `f_object`       | convert data to "object" format                                                                 | `"pretty":` 1 => jsonb_pretty()<br>`"strip":` 1 => strip nulls                                                               |
+| `f_array`        | convert data to "array" format                                                                  | `"pretty":` 1 => jsonb_pretty()<br>`"strip":` 1 => strip nulls                                                               |
+| `f_date`         | convert date_iso \| date_2000 to "date" format                                                  | `"format":` any format for "date" type<br>`"null_to_1970":` null date=>1970-01-01                                           |
+| `f_date_iso`     | convert date from any format to YYYY-MM-DD                                                      | `"format":` any format for "date" type<br>`"null_to_1970":` null date=>1970-01-01                                           |
+| `f_timestamp`    | convert data to "timestamp" format                                                              | `"format":` any format for "timestamp" type<br>`"timeZone":` "3-letters timezone"<br>`"null_to_1970":` null date=>1970-01-01 |
+| `f_date_2000`    | convert to "date_iso" format, then calculate amount of days after 2000-01-01                    | `"format":` any format for "date" type                                                                                      |
+| `f_unix_timestamp`| convert data to UNIX timestamp format (seconds since 1970-01-01)                              | `"format":` any format for "timestamp" type                                                                                 |
+| `f_period`       | convert "period" format to amount of seconds                                                    | (No specific parameters listed in the source text)                                                                            |
+| `s_lower`<br>`s_upper`<br>`s_initcap` | string transformation                                                           | (No specific parameters listed in the source text)                                                                            |
+| `s_btrim`        | btrim operation                                                                                 | `"btrim":` symbols to trim                                                                                                    |
+| `s_regexp_match` | regex transformation                                                                            | `"regex":` regex expression                                                                                                   |
+| `s_regex_replace`| regex transformation                                                                            | `"from"`, `"to"`, `"flag":`<br>regexp_replace() parameters                                                                   |
+| `s_split`        | string to array using regex                                                                     | `"regex":` regex expression                                                                                                   |
+| `s_nulls_to_string` | convert all nulls to strings                                                                  | `"default":` <any value> ("" by default)                                                                                     |
+| `v_number` \| `v_string` \| `v_date_2000` \| … | convert and validate field type                                                 | `"format":` "<any data format>"<br>`"validator": { "jsonpath": "$ > 0 && $ < 20", "maxLength": 256 }`                        |
+```
+
 ### `ub.util_build_template`
 
 Converts a template string with placeholders (`{$.<key>}`) and control statements (`{$if:}`, `{$for:}`) into a final text using parameters from a `sourceMapping` object. Supports nested statements.
