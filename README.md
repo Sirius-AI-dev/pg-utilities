@@ -727,8 +727,8 @@ Here's the Markdown version of the table from your `data_modifier` file:
 | f_string         | convert data to "string" format                     | `"format":` "password", `"delimiter"` => build string with delimiters from array \| object   |
 | f_object         | convert data to "object" format                     | `"pretty":` 1 => jsonb_pretty(), `"strip":` 1 => strip nulls                                 |
 | f_array          | convert data to "array" format                      | `"pretty":` 1 => jsonb_pretty(),`"strip":` 1 => strip nulls                                  |
-| f_date           | convert date_iso \| date_2000 to "date" format      | `"format":` any format for "date" type<br>`"null_to_1970":` null date=>1970-01-01            |
-| f_date_iso       | convert date from any format to YYYY-MM-DD          | `"format":` any format for "date" type<br>`"null_to_1970":` null date=>1970-01-01            |
+| f_date           | convert date_iso \| date_2000 to "date" format      | `"format":` any format for "date" type, `"null_to_1970":` null date=>1970-01-01              |
+| f_date_iso       | convert date from any format to YYYY-MM-DD          | `"format":` any format for "date" type, `"null_to_1970":` null date=>1970-01-01              |
 | f_timestamp      | convert data to "timestamp" format                  | `"format":` any format for "timestamp" type                                                  |
 |                  |                                                     | `"timeZone":` "3-letters timezone",`"null_to_1970":` null date=>1970-01-01                   |
 | f_date_2000      | convert to "date_iso" format,                       | `"format":` any format for "date" type                                                       |
@@ -744,14 +744,14 @@ Here's the Markdown version of the table from your `data_modifier` file:
 | s_regex_replace  | regex transformation                                | `"from"`, `"to"`, `"flag":` regexp_replace() parameters                                      |
 | s_split`         | string to array using regex                         | `"regex":` regex expression                                                                  |
 | s_nulls_to_string| convert all nulls to strings                        | `"default":` <any value> ("" by default)                                                     |
-| v_number         | convert and validate "number" type                  | `"validator": { "jsonpath": "$ > 0" }`                                                       |
+| v_number         | convert and validate "number" type                  | `"validator":` { "jsonpath": "$ > 0" }`                                                      |
 | v_string         | convert and validate "string" type                  | `"format":` null | "html" (remove <script>, <embed>, <iframe> and similar tags)              |
-| v_string         |                                                     | `"validator": { "jsonpath": "$ like_regex \"^A\"", "maxLength": 256 }`                       |
+| v_string         |                                                     | `"validator":` { "jsonpath": "$ like_regex \"^A\"", "maxLength": 256 }`                      |
 | v_date_2000      | validate "date" type and convert to amount of days  | `"format":` "<any date format>"`                                                             |
 |                  | after 2000-01-01                                    |                                                                                              |
 | v_unix_timestamp | convert "timestamp" type to UNIX timestamp          | `"format":` "<any date & time format>"`                                                      |
-| v_object         | convert and validate "object" type                  | `"validator": { "jsonpath": "$.a == 1", "maxLength": 1024 }`                                 |
-| v_array          | convert and validate "object" type                  | `"validator": { "jsonpath": "$[*] == 10", "maxLength": 4096 }`                               |
+| v_object         | convert and validate "object" type                  | `"validator":` { "jsonpath": "$.a == 1", "maxLength": 1024 }`                                |
+| v_array          | convert and validate "object" type                  | `"validator":` { "jsonpath": "$[*] == 10", "maxLength": 4096 }`                              |
 ```
 
 ### `ub.util_build_template`
