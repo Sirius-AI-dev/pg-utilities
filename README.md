@@ -777,13 +777,13 @@ Supported types and parameters:
 
 ### `ub.util_build_template`
 
-Converts a template string with placeholders (`{$.<key>}`) and control statements (`{$if:}`, `{$for:}`) into a final text using parameters from a `sourceMapping` object. Supports nested statements.
-Useful to build dynamic HTML templates (e-mails, posts), markdown documents and any other text documents
+> Converts a template string with placeholders (`{$.<key>}`) and control statements (`{$if:}`, `{$for:}`) into a final text using parameters from a `sourceMapping` object. Supports nested statements.
+> Useful to build dynamic HTML templates (e-mails, posts), markdown documents and any other text documents
 
 **Parameters:**
 
 *   **`ljinput jsonb`**: An object containing:
-    *   **`template` (string)**: The template string with `{$<statement>}` and `{$.<key>}` insertions.
+    *   **`template` (string|object|array)**: The template string or object or array with `{$<statement>}` and `{$.<key>}` insertions.
     *   **`sourceMapping` (object|array)**: Source data to use for the template processing (key-value pairs for placeholders).
     *   **`data` (array|null)**: (Internal use for recursive calls) Array of statements and data within them.
     *   **`firstRow` (number|null)**: (Internal use for recursive calls) Initial row to process `data` (starting with 0).
@@ -805,6 +805,14 @@ Useful to build dynamic HTML templates (e-mails, posts), markdown documents and 
 **Examples:**
 
 ```sql
+-- Enrich jsonb object with data from sourceMapping. 
+SELECT ub.util_build_template(jsonb_build_object(
+    'template', '{"title": "{$if:$.role_id == \"premium\"}Special offer{$else}Basic offer{$end} {$.price:200}"}'::jsonb,
+    'sourceMapping', '{"role_id": "premium", "price": 100}'::jsonb
+))
+--> {"result": {"title":"Special offer 100"}}
+
+-- Build text template, with if and loop conditions
 SELECT ub.util_build_template(jsonb_build_object(
     'template',
     '
