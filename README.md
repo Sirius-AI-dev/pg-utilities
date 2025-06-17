@@ -739,7 +739,7 @@ SELECT ub.util_data_modifier(jsonb_build_object(
 --> { "message": "invalid_jsonpath" }
 ```
 Supported types and parameters:
-
+```markdown
 | Type             | Description                                         | Parameters                                                                                   |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------|
 | f_number         | convert data to "number" format                     | `"format":` any format for "number" type                                                     |
@@ -772,7 +772,7 @@ Supported types and parameters:
 | v_unix_timestamp | convert "timestamp" type to UNIX timestamp          | `"format":` "<any date & time format>"`                                                      |
 | v_object         | convert and validate "object" type                  | `"validator":` { "jsonpath": "$.a == 1", "maxLength": 1024 }`                                |
 | v_array          | convert and validate "object" type                  | `"validator":` { "jsonpath": "$[*] == 10", "maxLength": 4096 }`                              |
-
+```
 
 ### `ub.util_build_template`
 
