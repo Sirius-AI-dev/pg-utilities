@@ -12,7 +12,8 @@ AS $BODY$
 
 /*
 @function ub.util_build_template
-@desc Convert template with {$.<key>} and {$<statement>} insertions into text using parameters from "sourceMapping" object
+@desc Convert template (string | object | array) with {$.<key>} and {$<statement>} insertions into text using parameters from "sourceMapping" object
+@desc Every {$.<key>} can contain an optional default value after ":", e.g. "{$.my_key:10}"
 @desc Allowed statements:
     - {$if:<any jsonpath condition>}, e.g. {$if:$.a > 0 && $.b == "test"}
     - {$elseif:<any jsonpath condition>}, e.g. {$elseif:$.a > 0 && $.b == "test"}
@@ -21,8 +22,7 @@ AS $BODY$
     - {$end} - end for {if:} | {for:} statements
 @desc Nested statements are supported
 
-@param string template - any string template with {$.<key>} and {$<statement>} insertions
-
+@param string|object|array template - any string template with {$.<key>} and {$<statement>} insertions
 @param object|array sourceMapping - source data to use for the template processing
 
 @param array|null data - array of statements and data inside them (used for a recursive call)
@@ -60,7 +60,7 @@ DECLARE
     lnRowID                     integer :=                                  -- initial row to process
         COALESCE(ljInput->>'firstRow', '0')::integer;
         
-        
+    
     -- Local variables
     lcProcessText               text;                                       -- text / statement to process
     lcStatementData             text;                                       -- statement data
@@ -75,30 +75,139 @@ DECLARE
     
     
 BEGIN
-
-    -- Initial call => split template by statements
+    
+    -- Initial call
     IF ljTemplateData IS NULL THEN
-    
-        SELECT
-            jsonb_agg(statement_data)
-        INTO ljTemplateData
-        FROM regexp_split_to_table(
-                -- basic template
-                ljInput->>'template',
-                -- split by {$.<statement>} expressions
-                '(?<=((\{\$[^\.])[^\}]+\}))|(?=((\{\$[^\.])[^\}]+\}))'
-            ) statement_data;
         
-        -- No data to process => exit
-        IF ljTemplateData IS NULL THEN
-        
-            RETURN jsonb_build_object(
-                'result', '',
-                'lastRow', 0
-            );
+        -- Check if template is an object => process all keys in the object
+        IF jsonb_typeof(ljInput->'template') IN ('object', 'array') THEN
             
-        END IF;
+            RETURN (
+                WITH
+                -- unnest object / array into plain table
+                "unnest_data" AS MATERIALIZED (
+                (   -- unnest object
+                    SELECT
+                        0 AS order_id,
+                        "template_data".key,
+                        "template_data".value
+                    FROM jsonb_each(ljInput->'template') AS template_data(key, value)
+                    WHERE jsonb_typeof(ljInput->'template') IS NOT DISTINCT FROM 'object'
+                )
+                UNION ALL
+                (   -- unnest array
+                    SELECT
+                        "template_data".order_id,
+                        NULL::text AS key,
+                        "template_data".value
+                    FROM jsonb_array_elements(ljInput->'template')
+                        WITH ORDINALITY AS template_data(value, order_id)
+                    WHERE jsonb_typeof(ljInput->'template') IS NOT DISTINCT FROM 'array'
+                )),
+                -- process unnested data
+                "process_data" AS MATERIALIZED (
+                    SELECT
+                        "unnest_data".order_id,
+                        "unnest_data".key,
+                        CASE
+                            -- no need to translate number or boolean
+                            WHEN jsonb_typeof("unnest_data".value) IN ('number', 'boolean') THEN 
+                                "unnest_data".value
+                            -- object / array => run ub.util_build_template() recursively
+                            WHEN jsonb_typeof("unnest_data".value) IN ('object', 'array') THEN 
+                                (ub.util_build_template(jsonb_build_object('template', "unnest_data".value, 'sourceMapping', ljSourceData)))->'result'
+                            -- string, with '{$' parameters
+                            WHEN ("unnest_data".value #>> '{}') ~ '\{\$' THEN
+                                CASE
+                                    WHEN ("unnest_data".value #>> '{}') ~ '\{\$[a-z]' 
+                                    -- has directives => run ub.util_build_template() recursively
+                                    THEN (ub.util_build_template(jsonb_build_object('template', "unnest_data".value, 'sourceMapping', ljSourceData)))->'result'
+                                    -- no directives => replace '{$' parameters with real values
+                                    ELSE (
+                                        SELECT
+                                            to_jsonb(
+                                                string_agg(
+                                                    CASE
+                                                        WHEN split_value ~ '^\{\$\.'
+                                                        -- translate {$.<key>} into value
+                                                        THEN COALESCE(
+                                                            -- extract value from input "value" object
+                                                            jsonb_path_query_first(ljSourceData, btrim(regexp_replace(split_value, '\:.*', ''), '{}')::jsonpath) #>> '{}',
+                                                            -- default value
+                                                            (regexp_match(split_value, '(?<=\:)[^\}]{1,}'))[1]
+                                                        )
+                                                        -- keep value as-is
+                                                        ELSE split_value
+                                                    END,
+                                                    ''
+                                                )::text
+                                            )
+                                        FROM regexp_split_to_table(
+                                            ("unnest_data".value #>> '{}'), 
+                                            '(?<=((\{\$\.)[^\}]+\}))|(?=((\{\$\.)[^\}]+\}))'
+                                        ) split_value
+                                    )
+                                END
+                            -- jsonpath string
+                            WHEN ("unnest_data".value #>> '{}') ~ '\$\.'
+                                AND ub.util_verificator("unnest_data".value #>> '{}', 'JSONPATH') = 'TRUE' THEN
+                                jsonb_path_query_first(ljSourceData, ("unnest_data".value #>> '{}')::jsonpath)
+                            -- ordinary string => no need to process data
+                            ELSE "unnest_data".value
+                        END AS new_value
+                    FROM "unnest_data"
+                )
+                -- build response
+                SELECT jsonb_build_object(
+                    'result',
+                        CASE
+                            WHEN jsonb_typeof(ljInput->'template') IS NOT DISTINCT FROM 'array'
+                            -- combine response as array
+                            THEN (
+                                SELECT
+                                    jsonb_agg(
+                                        "process_data".new_value
+                                        ORDER BY "process_data".order_id
+                                    )
+                                FROM "process_data"
+                            )
+                            -- combine response as object
+                            ELSE (
+                                SELECT
+                                    jsonb_object_agg(
+                                        "process_data".key,
+                                        "process_data".new_value
+                                    )
+                                FROM "process_data"
+                            )
+                        END
+                )
+            );
+        
+        
+        -- Text template => split template by statements   
+        ELSE
     
+            SELECT
+                jsonb_agg(statement_data)
+            INTO ljTemplateData
+            FROM regexp_split_to_table(
+                    -- basic template
+                    ljInput->>'template',
+                    -- split by {$.<statement>} expressions
+                    '(?<=((\{\$[^\.])[^\}]+\}))|(?=((\{\$[^\.])[^\}]+\}))'
+                ) statement_data;
+
+            -- No data to process => exit
+            IF ljTemplateData IS NULL THEN
+
+                RETURN jsonb_build_object(
+                    'result', '',
+                    'lastRow', 0
+                );
+
+            END IF;
+        END IF;
     END IF;
     
     
@@ -344,6 +453,15 @@ END;
 /*
 @example
 
+-- Enrich jsonb object with data from sourceMapping. 
+SELECT ub.util_build_template(jsonb_build_object(
+    'template', '{"title": "{$if:$.role_id == \"premium\"}Special offer{$else}Basic offer{$end} {$.price:200}"}'::jsonb,
+    'sourceMapping', '{"role_id": "premium", "price": 100}'::jsonb
+))
+--> {"result": {"title":"Special offer 100"}}
+
+
+-- Build text template, with if and loop conditions
 SELECT ub.util_build_template(jsonb_build_object(
     'template', 
     '
@@ -401,15 +519,17 @@ SELECT ub.util_build_template(jsonb_build_object(
         {$end}
     ',
     'sourceMapping',
-    '{
-        "a":2, 
-        "b":3, 
-        "c":2,
-        "v1": [
-            {"m":"text1","n":"next1"},
-            {"m":"text2","n":"next2"}
-        ]
-    }'::jsonb
+    '
+        {
+            "a":2, 
+            "b":3, 
+            "c":2,
+            "v1": [
+                {"m":"text1","n":"next1"},
+                {"m":"text2","n":"next2"}
+            ]
+        }
+    '::jsonb
 ));
 
 =>
