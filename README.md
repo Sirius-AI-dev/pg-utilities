@@ -48,7 +48,7 @@ These functions provide advanced operations for PostgreSQL's native `double prec
 
 ### `ub.util_array_float`
 
-Processes two float arrays. Arrays with different sizes are automatically expanded to the largest one.
+Processes ("SUM", "MERGE") two float arrays. Arrays with different sizes are automatically expanded to the largest one.
 
 **Parameters:**
 
@@ -66,16 +66,16 @@ Processes two float arrays. Arrays with different sizes are automatically expand
 
 ```sql
 SELECT ub.util_array_float(ARRAY[0.5, 2.1], ARRAY[0.3, 3.2, 5.5], 'SUM');
--- {0.8,5.3,5.5}
+--> {0.8,5.3,5.5}
 
 SELECT ub.util_array_float(ARRAY[0.5, 2.1], ARRAY[0.3, 2.1, 5.5], 'MERGE');
--- {0.5,2.1,0.3,2.1,5.5}
+--> {0.5,2.1,0.3,2.1,5.5}
 
 SELECT ub.util_array_float(ARRAY[0.5, 2.1], ARRAY[0.3, 2.1, 5.5], 'MERGE_UNIQUE');
--- {0.3,2.1,5.5,0.5}
+--> {0.3,2.1,5.5,0.5}
 
 SELECT ub.util_array_float(ARRAY[0.5, 2.1], ARRAY[0.3, 2.1, 5.5], 'MERGE5');
--- {0.5,2.1,0,0,0.3,2.1,5.5}
+--> {0.5,2.1,0,0,0.3,2.1,5.5}
 ```
 
 ### `ub.agg_array_float`
@@ -93,7 +93,7 @@ An aggregate function for operations with float arrays. It uses `ub.util_array_f
 
 ### `ub.util_array_integer`
 
-Processes two integer arrays. Arrays with different sizes are automatically expanded to the largest one.
+Processes ("SUM", "MERGE") two integer arrays. Arrays with different sizes are automatically expanded to the largest one.
 
 **Parameters:**
 
@@ -111,16 +111,16 @@ Processes two integer arrays. Arrays with different sizes are automatically expa
 
 ```sql
 SELECT ub.util_array_integer(ARRAY[5, 2], ARRAY[3, 2, 8], 'SUM');
--- {8,4,8}
+--> {8,4,8}
 
 SELECT ub.util_array_integer(ARRAY[5, 2], ARRAY[3, 2, 8], 'MERGE');
--- {5,2,3,2,8}
+--> {5,2,3,2,8}
 
 SELECT ub.util_array_integer(ARRAY[5, 2], ARRAY[3, 2, 8], 'MERGE_UNIQUE');
--- {2,3,5,8}
+--> {2,3,5,8}
 
 SELECT ub.util_array_integer(ARRAY[5, 2], ARRAY[3, 2, 8], 'MERGE5');
--- {5,2,0,0,3,2,8}
+--> {5,2,0,0,3,2,8}
 ```
 
 ### `ub.agg_array_integer`
@@ -152,7 +152,7 @@ Quickly merges the second float array at a specified position (`lnPosID`) of the
 
 ```sql
 SELECT ub.util_array_merge(ARRAY[0.5, 2.1], ARRAY[0.3, 2.1, 5.5], 5);
--- {0.5,2.1,0,0,0.3,2.1,5.5}
+--> {0.5,2.1,0,0,0.3,2.1,5.5}
 ```
 
 ### `ub.agg_array_merge`
@@ -174,7 +174,8 @@ These functions provide powerful capabilities for manipulating and querying JSON
 
 ### `ub.util_jsonb_array`
 
-Processes two JSONB arrays based on a specified merge flag.
+Combines two JSONB arrays based on a specified merge flag.
+Useful for non-standard merge operations, e.g. with duplicate elimination
 
 **Parameters:**
 
@@ -193,19 +194,19 @@ Processes two JSONB arrays based on a specified merge flag.
 
 ```sql
 SELECT ub.util_jsonb_array('[2,3]'::jsonb, '[4,3]'::jsonb, 'expand');
--- [2,3,4]
+--> [2,3,4]
 
 SELECT ub.util_jsonb_array('[2,3]'::jsonb, '[4,3]'::jsonb, 'replace');
--- [4,3]
+--> [4,3]
 
 SELECT ub.util_jsonb_array('[2,3]'::jsonb, '[4,3]'::jsonb, 'add');
--- [2,3,4,3]
+--> [2,3,4,3]
 
 SELECT ub.util_jsonb_array('[2,3,4,5]'::jsonb, '[4,3]'::jsonb, 'sub');
--- [2,5]
+--> [2,5]
 
 SELECT ub.util_jsonb_array('[2,3,4,5]'::jsonb, '[4,3,1]'::jsonb, 'intersect');
--- [3,4]
+--> [3,4]
 ```
 
 ### `ub.agg_jsonb_array`
@@ -223,7 +224,7 @@ An aggregate function to process two JSONB arrays. It uses `ub.util_jsonb_array`
 
 ### `ub.util_jsonb_concat`
 
-Concatenates two JSONB objects, handling `NULL` values gracefully. If either input is not an object, it defaults to an empty object or returns the valid object.
+NULL-friendly concatenator of two JSONB objects. If either input is not an object, it defaults to an empty object or returns the valid object.
 
 **Parameters:**
 
@@ -264,6 +265,8 @@ Merges JSON objects, arrays, or any JSON type following specific rules:
 *   Arrays are merged using the `lcArrayFlag` parameter.
 *   `string`, `number`, `boolean` types are replaced.
 
+Useful to merge multi-level objects, e.g. {"a": {"b": {"c": 1}}} and {"a": {"b": {"d": 5}}}
+
 **Parameters:**
 
 *   **`ljinitialobject jsonb`**: Initial object or any other JSON type.
@@ -279,16 +282,16 @@ Merges JSON objects, arrays, or any JSON type following specific rules:
 
 ```sql
 SELECT ub.util_jsonb_merge('{"a": {"b": {"c": 1}}}'::jsonb, '{"a": {"b": {"d": 5}}}'::jsonb, 'expand');
--- {"a": {"b": {"c": 1, "d": 5}}} (objects are expanded)
+--> {"a": {"b": {"c": 1, "d": 5}}} (objects are expanded)
 
 SELECT ub.util_jsonb_merge('{"a.b": {"c": 5}}'::jsonb, '{"a.b": {"d": 8}}'::jsonb, 'expand');
--- {"a.b": {"c": 5, "d": 8}} (objects are expanded)
+--> {"a.b": {"c": 5, "d": 8}} (objects are expanded)
 
 SELECT ub.util_jsonb_merge('{"a": {"c": 5, "d": [1,2]}}'::jsonb, '{"a": {"b": 8, "d": [3,4]}}'::jsonb, 'replace');
--- {"a":{"b":8,"c":5,"d":[3,4]}} (arrays are replaced)
+--> {"a":{"b":8,"c":5,"d":[3,4]}} (arrays are replaced)
 
 SELECT ub.util_jsonb_merge('{"a": {"c": 5, "d": [1,2]}}'::jsonb, '{"a": {"b": 8, "d": [3,4]}}'::jsonb, 'add');
--- {"a":{"b":8,"c":5,"d":[1,2,3,4]}} (arrays are concatenated)
+--> {"a":{"b":8,"c":5,"d":[1,2,3,4]}} (arrays are concatenated)
 ```
 
 ### `ub.agg_jsonb_merge`
@@ -319,7 +322,7 @@ Concatenates two JSONB objects and sets any keys present only in the initial obj
 
 ```sql
 SELECT ub.util_jsonb_merge_null('{"a": 1, "b": 2}'::jsonb, '{"b": 3}'::jsonb);
--- {"a": null, "b": 3}
+--> {"a": null, "b": 3}
 ```
 
 ### `ub.util_jsonb_multi_array`
@@ -341,13 +344,13 @@ Processes multiple JSONB arrays, considering `NULL` values and specified merge r
 
 ```sql
 SELECT ub.util_jsonb_multi_array('expand', '[2,3]'::jsonb, '[4,3]'::jsonb, '[5,3,2]'::jsonb);
--- [2,3,4,5]
+--> [2,3,4,5]
 
 SELECT ub.util_jsonb_multi_array('add', '[2,3]'::jsonb, '[4,3]'::jsonb, '[5,3,2]'::jsonb);
--- [2,3,4,3,5,3,2]
+--> [2,3,4,3,5,3,2]
 
 SELECT ub.util_jsonb_multi_array('intersect', '[2,3]'::jsonb, '[4,3]'::jsonb, '[5,3,2]'::jsonb);
--- [3]
+--> [3]
 ```
 
 ### `ub.util_jsonb_multi_concat`
@@ -364,7 +367,7 @@ Concatenates multiple JSONB objects, handling `NULL` values.
 
 ```sql
 SELECT ub.util_jsonb_multi_concat('{"a": 1}'::jsonb, '{"b": 2}'::jsonb, NULL::jsonb, '{"c": 3}'::jsonb);
--- {"a": 1, "b": 2, "c": 3}
+--> {"a": 1, "b": 2, "c": 3}
 ```
 
 ### `ub.util_jsonb_multi_merge`
@@ -385,13 +388,13 @@ Merges multiple JSON objects, arrays, or any JSON type following specific rules,
 
 ```sql
 SELECT ub.util_jsonb_multi_merge('expand', '{"a": {"b": {"c": 1}}}'::jsonb, '{"a": {"b": {"d": 5}}}'::jsonb, '{"a": {"b": {"f": 5}}}'::jsonb);
--- {"a":{"b":{"c":1,"d":5,"f":5}}} (objects are expanded)
+--> {"a":{"b":{"c":1,"d":5,"f":5}}} (objects are expanded)
 
 SELECT ub.util_jsonb_multi_merge('replace', '{"a": {"c": 5, "d": [1,2], "e": [2,3]}}'::jsonb, '{"a": {"b": 8, "d": [3,4]}}'::jsonb, '{"a": {"b": 8, "e": [5,6]}}'::jsonb);
--- {"a":{"b":8,"c":5,"d":[3,4],"e":[5,6]}} (arrays are replaced)
+--> {"a":{"b":8,"c":5,"d":[3,4],"e":[5,6]}} (arrays are replaced)
 
 SELECT ub.util_jsonb_multi_merge('add', '{"a": {"c": 5, "d": [1,2]}}'::jsonb, '{"a": {"b": 8, "d": [3,4]}}'::jsonb, '{"a": {"b": 8, "d": [5,6]}}'::jsonb);
--- {"a":{"b":8,"c":5,"d":[1,2,3,4,5,6]}} (arrays are concatenated)
+--> {"a":{"b":8,"c":5,"d":[1,2,3,4,5,6]}} (arrays are concatenated)
 ```
 
 ### `ub.util_jsonb_nest`
@@ -446,6 +449,7 @@ SELECT ub.util_jsonb_unnest('{"a":{"b":{"c": 1, "d": 5}}}'::jsonb, 'prefix_', '#
 ### `ub.util_jsonb_update`
 
 Updates a JSONB object with new values at specified paths. It supports various path syntaxes, including dot notation, quoted keys, and JSONPath expressions for arrays.
+Useful to update json attributes inside multi-level objects and/or arrays 
 
 **Parameters:**
 
@@ -467,25 +471,43 @@ Updates a JSONB object with new values at specified paths. It supports various p
 
 ```sql
 SELECT ub.util_jsonb_update('{"a":{"b":{"c": 1}, "f": 10}}'::jsonb, '{"a.b":{"d": 5}}'::jsonb);
--- {"a":{"b":{"d":5},"f":10}} (update at specific json path)
+--> {"a":{"b":{"d":5},"f":10}} (update at specific json path)
 
-SELECT ub.util_jsonb_update('{"a":[{"id": 1, "b": 1}, {"id": 2, "b": [{"id": 1, "f": 3}] }]}'::jsonb, '{"(($.a[*] ? (@.id == 2)).b[*] ? (@.id == 1)).g": 10}'::jsonb);
--- {"a":[{"id":1, "b":1}, {"id":2, "b":[{"f":3,"g":10,"id":1}]}]} (update keys in the object at specific jsonpath)
+SELECT ub.util_jsonb_update(
+   '{"a":[{"id": 1, "b": 1}, {"id": 2, "b": [{"id": 1, "f": 3}] }]}'::jsonb,
+   '{"(($.a[*] ? (@.id == 2)).b[*] ? (@.id == 1)).g": 10}'::jsonb
+);
+--> {"a":[{"id":1, "b":1}, {"id":2, "b":[{"f":3,"g":10,"id":1}]}]} (update keys in the object at specific jsonpath)
 
-SELECT ub.util_jsonb_update('{"a":[{"id": 1, "b": 1}, {"id": 2, "b": [{"id": 1, "f": 3}] }]}'::jsonb, '{"(($.a[*] ? (@.id == 2)).b[*] ? (@.id == 1))": {"id": 1, "a": 10} }'::jsonb);
--- {"a":[{"b":1, "id":1}, {"b":[{"a":10,"id":1}], "id":2}]} (replace object at specific jsonpath)
+SELECT ub.util_jsonb_update(
+   '{"a":[{"id": 1, "b": 1}, {"id": 2, "b": [{"id": 1, "f": 3}] }]}'::jsonb,
+   '{"(($.a[*] ? (@.id == 2)).b[*] ? (@.id == 1))": {"id": 1, "a": 10} }'::jsonb
+);
+--> {"a":[{"b":1, "id":1}, {"b":[{"a":10,"id":1}], "id":2}]} (replace object at specific jsonpath)
 
-SELECT ub.util_jsonb_update('{"a":[{"id": 1, "b": 1}, {"id": 2, "b": [{"id": 1, "f": 3}] }] }'::jsonb, '{"(($.a[*] ? (@.id == 2)).b[*] ? (@.id == 0 && 17689 > 0))": {"f": 5}}'::jsonb);
--- {"a":[{"b":1,"id":1}, {"b":[{"f":3,"id":1},{"f":5,"id":2}], "id":2}]} (add object at specific jsonpath. Add a random value (e.g. 17689) to keep the whole key name unique)
+SELECT ub.util_jsonb_update(
+   '{"a":[{"id": 1, "b": 1}, {"id": 2, "b": [{"id": 1, "f": 3}] }] }'::jsonb,
+   '{"(($.a[*] ? (@.id == 2)).b[*] ? (@.id == 0 && 17689 > 0))": {"f": 5}}'::jsonb
+);
+--> {"a":[{"b":1,"id":1}, {"b":[{"f":3,"id":1},{"f":5,"id":2}], "id":2}]} (add object at specific jsonpath. Add a random value (e.g. 17689) to keep the whole key name unique)
 
-SELECT ub.util_jsonb_update('{"a":[{"id": 1, "b": 1}, {"id": 2, "b": [{"id": 1, "f": 3}, {"id": 2, "f": 10}]}]}'::jsonb, '{"(($.a[*] ? (@.id == 2)).b[*] ? (@.id == 1))": null}'::jsonb);
--- {"a":[{"b":1,"id":1},{"b":[{"f":10,"id":2}],"id":2}]} (delete object at specific jsonpath)
+SELECT ub.util_jsonb_update(
+   '{"a":[{"id": 1, "b": 1}, {"id": 2, "b": [{"id": 1, "f": 3}, {"id": 2, "f": 10}]}]}'::jsonb,
+   '{"(($.a[*] ? (@.id == 2)).b[*] ? (@.id == 1))": null}'::jsonb
+);
+--> {"a":[{"b":1,"id":1},{"b":[{"f":10,"id":2}],"id":2}]} (delete object at specific jsonpath)
 
-SELECT ub.util_jsonb_update('{"a":{"b":{"c": 1}}}'::jsonb, '{"*":{"d": 5}}'::jsonb);
--- {"d": 5} (replace with a new object)
+SELECT ub.util_jsonb_update(
+   '{"a":{"b":{"c": 1}}}'::jsonb,
+   '{"*":{"d": 5}}'::jsonb
+);
+--> {"d": 5} (replace with a new object)
 
-SELECT ub.util_jsonb_update('{"a":{"b":{"c": 1}}}'::jsonb, '{"||":{"a": {"b": {"d": 5}}}}'::jsonb);
--- {"a":{"b":{"c": 1, "d": 5}}} (expand the initial object)
+SELECT ub.util_jsonb_update(
+   '{"a":{"b":{"c": 1}}}'::jsonb,
+   '{"||":{"a": {"b": {"d": 5}}}}'::jsonb
+);
+--> {"a":{"b":{"c": 1, "d": 5}}} (expand the initial object)
 ```
 
 ### `ub.util_jsonb_differ`
@@ -506,16 +528,16 @@ Prepares a list of keys in the "updated object" that differ from the same keys i
 
 ```sql
 SELECT ub.util_jsonb_differ('{"a":{"b":{"c": 1}}}'::jsonb, '{"a.b.c": 1}'::jsonb);
--- null (no new keys)
+--> null (no new keys)
 
 SELECT ub.util_jsonb_differ('{"a": [2, 3], "b": 10, "d": 20}'::jsonb, '{"a": [3, 4], "b": 10}'::jsonb);
--- {"a": [3, 4]}
+--> {"a": [3, 4]}
 
 SELECT ub.util_jsonb_differ('{"a": [2, 3], "b": 10}'::jsonb, '{"a": [3, 4], "b": 10}'::jsonb, 'order_no_matter');
--- null (no new keys)
+--> null (no new keys)
 
 SELECT ub.util_jsonb_differ('{"a": [2, 3], "b": 10}'::jsonb, '{"a": [3, 4], "b": 10}'::jsonb, 'order_matter');
--- {"a": [3, 4]}
+--> {"a": [3, 4]}
 ```
 
 ### `ub.util_jsonb_process`
@@ -538,6 +560,7 @@ Processes a JSONB object or array with various specific rules defined by the `lc
 #### `JSON_TO_PLAIN_ARRAY` action
 
 Converts any JSON (object or array) with nested arrays into a plain array of objects, each with `prefix`, `path`, `child`, `order`, and `value` keys.
+Useful to convert jsonb object into table for further processing
 
 **`ljinitialobject`**: JSON object or array of objects to unnest.
 **`ljprocessdata`**: (Internal usage)
@@ -560,14 +583,13 @@ SELECT ub.util_jsonb_process(
     NULL::jsonb,
     'JSON_TO_PLAIN_ARRAY'
 );
-/*
+-->
 [
     { "prefix": "", "path": [], "child": ["foo"], "value": { "bar": "info" } },
     { "prefix": "foo", "path": ["foo"], "child": ["a"], "order": 1, "value": {} },
     { "prefix": "foo:a", "path": ["foo", "1", "a"], "child": [], "order": 1, "value": {"b": 1} },
     { "prefix": "foo:a", "path": ["foo", "1", "a"], "child": [], "order": 2, "value": {"b": 2} }
 ]
-*/
 ```
 
 ---
@@ -575,6 +597,7 @@ SELECT ub.util_jsonb_process(
 #### `JSON_DIFFERENCE` action
 
 Compares two JSON objects (or arrays of objects) and builds an array of objects detailing the differences.
+Useful for unit-tests to compare expected and actual responses of any function
 
 **`ljinitialobject`**: "Left" JSON object or array of objects (expected values).
 **`ljprocessdata`**: "Right" JSON object or array of objects (result values).
@@ -597,13 +620,12 @@ SELECT ub.util_jsonb_process(
     '{"a": [3, 4], "b": [{"f": 20}, {"f": 30}], "d": 20}'::jsonb,
     'JSON_DIFFERENCE'
 );
-/*
+-->
 [
     {"key":"a", "path":[], "order":null, "result":[3,4], "expected":[2,3]},
     {"key":"f", "path":["b"], "order":1, "result":20, "expected":10},
     {"key":"f", "path":["b"], "order":2, "result":30, "expected":20}
 ]
-*/
 ```
 
 ---
@@ -611,6 +633,7 @@ SELECT ub.util_jsonb_process(
 #### `CHILDREN_FROM_PLAIN_ARRAY` action
 
 Builds a nested structure from a plain array of objects like `{ "key", "value", "parentKey" }`.
+Useful to build tree tables
 
 **`ljinitialobject`**: Array of objects to nest. Each object should have:
     *   `key` (number|string|object): Unique key of the object.
@@ -637,7 +660,7 @@ SELECT ub.util_jsonb_process(
     NULL::jsonb,
     'CHILDREN_FROM_PLAIN_ARRAY'
 );
--- [{"info": "foo", "children": [{"info": "bar", "children": [{"info": "baz"}]}]}]
+--> [{"info": "foo", "children": [{"info": "bar", "children": [{"info": "baz"}]}]}]
 ```
 
 ---
@@ -645,6 +668,7 @@ SELECT ub.util_jsonb_process(
 ## Data Modifiers & Templating
 
 These functions provide tools for modifying data types and values, and for building dynamic text templates.
+Useful for input validation and data type / format transformations, e.g. store a date or a datetime as a number for easy comparison and sort
 
 ### `ub.util_data_modifier`
 
@@ -684,40 +708,37 @@ SELECT ub.util_data_modifier(jsonb_build_object(
     'value', '25',
     'modifier', '[{"type": "f_number", "format": "FM999,999.00"}]'::jsonb
 ));
--- { "result": "25.00" }
+--> { "result": "25.00" }
 
 -- Example: convert and format date from date_2000
 SELECT ub.util_data_modifier(jsonb_build_object(
     'value', '7300',
     'modifier', '[{"type": "f_date", "format": "DD Mon YYYY"}]'::jsonb
 ));
--- { "result": "27 Dec 2019" }
+--> { "result": "27 Dec 2019" }
 
 -- Example: split array into elements
 SELECT ub.util_data_modifier(jsonb_build_object(
     'value', jsonb_build_array('foo', 'bar'),
     'modifier', '[{"type": "f_string", "delimiter": "\n"}]'::jsonb
 ));
--- { "result": "foo\nbar" }
+--> { "result": "foo\nbar" }
 
 -- Example: "p1d" period into seconds
 SELECT ub.util_data_modifier(jsonb_build_object(
     'value', 'p1w',
     'modifier', '[{"type": "f_period"}]'::jsonb
 ));
--- { "result": 604800 }
+--> { "result": 604800 }
 
 -- Example: validate text using jsonpath expression
 SELECT ub.util_data_modifier(jsonb_build_object(
     'value', 'my text',
     'modifier', '[{"type": "v_string", "validator": {"jsonpath": "$ like_regex \"^a\""}}]'::jsonb
 ));
--- { "message": "invalid_jsonpath" }
+--> { "message": "invalid_jsonpath" }
 ```
-
-Okay, I can definitely help with that! You've provided the text content of the table, which I can now process.
-
-Here's the Markdown version of the table from your `data_modifier` file:
+Supported types and parameters:
 
 ```markdown
 | Type             | Description                                         | Parameters                                                                                   |
@@ -757,6 +778,7 @@ Here's the Markdown version of the table from your `data_modifier` file:
 ### `ub.util_build_template`
 
 Converts a template string with placeholders (`{$.<key>}`) and control statements (`{$if:}`, `{$for:}`) into a final text using parameters from a `sourceMapping` object. Supports nested statements.
+Useful to build dynamic HTML templates (e-mails, posts), markdown documents and any other text documents
 
 **Parameters:**
 
@@ -850,8 +872,8 @@ SELECT ub.util_build_template(jsonb_build_object(
         ]
     }'::jsonb
 ));
-/*
-"
+
+-->
         First
             Case
                 check
@@ -870,8 +892,7 @@ SELECT ub.util_build_template(jsonb_build_object(
             Case
                 check
                 2
-            text"
-*/
+            text
 ```
 
 ---
@@ -883,6 +904,7 @@ Functions related to JWT (JSON Web Tokens) and cron-like scheduling.
 ### `ub.util_jwt`
 
 Provides utilities for JWT (JSON Web Token) processing. **Requires the `pgcrypto` extension.**
+Easy to sign and verify JWT
 
 **Parameters:**
 
@@ -909,21 +931,21 @@ Provides utilities for JWT (JSON Web Token) processing. **Requires the `pgcrypto
 
 ```sql
 SELECT ub.util_jwt('{"mode": "jwt_sign", "jwtPayload": {"a": 1}, "jwtSecret": "1234"}');
--- { "jwtValue": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhIjogMX0.3aKAFdFca4DozVrKxqgcGPZik8erGRtdbTipg8Hk9Ao" }
+--> { "jwtValue": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhIjogMX0.3aKAFdFca4DozVrKxqgcGPZik8erGRtdbTipg8Hk9Ao" }
 
 SELECT ub.util_jwt('{"mode": "jwt_verify", "jwtValue": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhIjogMX0.3aKAFdFca4DozVrKxqgcGPZik8erGRtdbTipg8Hk9Ao", "jwtSecret": "1234"}');
-/*
+-->
 {
     "jwtValid": 1,
     "jwtHeader": {"alg": "HS256", "typ": "JWT" },
     "jwtPayload": { "a": 1}
 }
-*/
 ```
 
 ### `ub.util_process_crontab`
 
 Calculates the next UNIX timestamp based on a crontab expression.
+Useful for CRON and any other scheduled tasks
 
 **Parameters:**
 
@@ -942,16 +964,16 @@ Calculates the next UNIX timestamp based on a crontab expression.
 
 ```sql
 SELECT ub.util_process_crontab('5 * * * * * '); -- every minute at 5th second
--- 1762090925 (value depends on the current timestamp)
+--> 1762090925 (value depends on the current timestamp)
 
 SELECT ub.util_process_crontab('*/5 * * * * * '); -- every 5 seconds
--- 1762092675 (value depends on the current timestamp)
+--> 1762092675 (value depends on the current timestamp)
 
 SELECT ub.util_process_crontab('* * 5,10,15 * * *'); -- every day at 5 a.m., 10 a.m. and 3 p.m. UTC
--- 1762092600 (value depends on the current timestamp)
+--> 1762092600 (value depends on the current timestamp)
 
 SELECT ub.util_process_crontab('* * 3 * * MON,WED,FRI'); -- at 3 a.m. on Monday, Wednesday and Friday
--- 1762092600 (value depends on the current timestamp)
+--> 1762092600 (value depends on the current timestamp)
 ```
 
 ---
@@ -963,6 +985,7 @@ A universal function for validating various data types and formats.
 ### `ub.util_verificator`
 
 A universal verificator to check if an input text matches a specified type or format.
+Useful to check format of a text variable without processing an SQL error
 
 **Parameters:**
 
@@ -987,18 +1010,18 @@ A universal verificator to check if an input text matches a specified type or fo
 
 ```sql
 SELECT ub.util_verificator('[{2,3]', 'JSON');
--- FALSE
+--> "FALSE"
 
 SELECT ub.util_verificator('[2,3]', 'JSONARRAY');
--- TRUE
+--> "TRUE"
 
 SELECT ub.util_verificator('12.10.2020', 'DATE_YYYY-MM-DD');
--- FALSE
+--> "FALSE"
 
 SELECT ub.util_verificator('https://google.com', 'URL');
--- TRUE
+--> "TRUE"
 
 SELECT ub.util_verificator('$.a = "check', 'JSONPATH');
--- FALSE
+--> "FALSE"
 ```
 ```
